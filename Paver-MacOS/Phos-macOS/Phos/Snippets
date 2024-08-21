@@ -1,0 +1,161 @@
+// VERTEX SHADER
+
+#version 330
+
+in vec2 vertexOffs;
+in vec2 texCoord;
+in vec3 normalVec;
+in vec3 charColor;
+in uint charData;
+
+out vec2 Texcoord;
+out vec3 CharColor;
+out vec3 bgColor;
+flat out uint CharData;
+
+uniform mat4 mvM;
+uniform mat4 projM;
+uniform mat4 normalM;
+uniform vec3 bgcol;
+uniform float cursorx;
+uniform float cursory;
+uniform float cursorvis;
+
+const float dx = 2.0 / 64.0;
+const float dy = 2.0 / 32.0;
+float z;
+
+float rdist(float x, float y) {
+return sqrt( (32.0 - x) * ( 32.0 - x ) +  (16.0 - y) * (16.0 - y) );
+// range 0 - 35.77
+}
+
+void main (void)
+{
+int y = gl_InstanceID / 64;
+int x = gl_InstanceID % 64;
+
+// z = 0;
+z = 0.2 - (rdist(x,y)/36) * (rdist(x,y)/36) / 32;
+// z = 0.2 - 0.1 * rdist(x,y) / 40;
+
+gl_Position = vec4(   -1 + x*dx,  1 - y*dy, z, 1.0 ) + vec4( vertexOffs.x * dx, vertexOffs.y * dy, 0, 0);
+gl_Position = projM * mvM * gl_Position;
+
+Texcoord = texCoord;
+CharData = charData;
+if (x == cursorx && y == cursory && cursorvis!=0)
+{
+CharColor = bgcol;
+bgColor = charColor;
+} else {
+CharColor = charColor;
+bgColor = bgcol;
+}
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+// FRAGMENT SHADER
+
+#version 330
+
+in vec2 Texcoord;
+in vec3 CharColor;
+in vec3 bgColor;
+flat in uint CharData;
+
+out vec4 fragColour;
+
+uniform sampler2DArray sampler;
+
+void main(void)
+{
+fragColour = texture( sampler, vec3(Texcoord, CharData) );
+
+if (fragColour.x < 0.1 && fragColour.y < 0.1 && fragColour.z < 0.1) fragColour = vec4(bgColor,1);
+else {
+fragColour.x = fragColour.x * CharColor.x;
+fragColour.y = fragColour.y * CharColor.y;
+fragColour.z = fragColour.z * CharColor.z;
+fragColour.a = 1;
+}
+
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+- (GLfloat*) createParabolicMesh
+{
+float quadsX = 64.0;
+float quadsY = 32.0;
+
+GLuint meshIndex = 0;
+
+struct {
+GLfloat x, y, z, tx, ty; // Base quad (2 triangles)
+} vertexOffs[] = {
+{  0.0, 0.0, 0.0,  0.0, 1.0 },
+{  0.0, 0.0, 0.0,  0.0, 1.0 }, // Degenerate vertex
+{  0.0, 1.0, 1.0,  0.0, 0.0 },
+{  1.0, 0.0, 0.0,  1.0, 1.0 },
+{  1.0, 1.0, 1.0,  1.0, 0.0 },
+{  1.0, 1.0, 1.0,  1.0, 0.0 } // Degenerate vertex
+};
+
+struct mesh_t {
+GLfloat vertex[3];
+GLfloat normal[3];
+GLfloat texcoord[2];
+GLfloat alpha;
+};
+
+screen.stride = sizeof(struct mesh_t);
+screen.vertexCount = quadsX * quadsY * 6; // Six vertices per quad
+struct mesh_t* parabData =
+malloc ( screen.vertexCount * screen.stride );
+
+GLfloat xcoord,ycoord,zcoord;
+GLfloat dx = 2.0 / quadsX;
+GLfloat dy = 2.0 / quadsY;
+
+for (int i=0; i<quadsY; i++) {
+for (int j=0; j<quadsX; j++) {
+for (int k=0; k<6; k++) {
+
+zcoord = 0.2 - (rdist(j,i)/36) * (rdist(j,i)/36) / 32;
+
+// Compute vertex coordinates
+
+parabData[meshIndex].vertex[0] =
+xcoord = -1.0 + j*1.0 * dx + vertexOffs[k].x * dx;
+parabData[meshIndex].vertex[1] =
+ycoord =  1.0 - i*1.0 * dy + vertexOffs[k].y * dy;
+parabData[meshIndex].vertex[2] = zcoord;
+
+parabData[meshIndex].normal[0] = 0.0;
+parabData[meshIndex].normal[1] = 0.0;
+parabData[meshIndex].normal[2] = 1.0;
+
+parabData[meshIndex].texcoord[0] =
+(GLfloat) j * dx * 0.5 + vertexOffs[k].tx * dx * 0.5;
+parabData[meshIndex].texcoord[1] =
+(GLfloat) i * dy * 0.5 + vertexOffs[k].ty * dy * 0.5;
+
+parabData[meshIndex].alpha = 1.0;
+
+meshIndex++;
+}
+}
+}
+return (GLfloat*) parabData;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+

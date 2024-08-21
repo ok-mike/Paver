@@ -1,0 +1,69 @@
+// Vertex shader
+
+#version 300 es
+
+precision mediump float;
+
+in vec2 vertexOffs;
+in vec2 uvChar;
+in vec3 charColor;
+in uint charData;
+
+uniform mat4 viewMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 modelViewProjectionMatrix;
+
+uniform float v_showBg;
+uniform float v_pixResX;
+uniform float v_pixResY;
+
+uniform vec3 bgcol;
+uniform int cursorx;
+uniform int cursory;
+uniform int cursorvis;
+
+out vec2 v_uv;
+out vec2 Texcoord;
+out vec3 CharColor;
+out vec3 bgColor;
+flat out uint CharData;
+out float f_showBg;
+out float f_pixResX;
+out float f_pixResY;
+
+const float dx = 2.0 / 64.0;
+const float dy = 2.0 / 32.0;
+float z;
+
+void main()
+{
+    int y = gl_InstanceID / 64;
+    int x = gl_InstanceID % 64;
+
+    float x_float = float(x);
+    float y_float = float(y);
+
+    z = 0.0;
+    vec4 vertex = vec4( -1.0 + x_float*dx,  1.0 - (y_float+1.0)*dy, z, 1.0 ) + vec4( vertexOffs.x * dx, vertexOffs.y * dy, 0, 0);
+    gl_Position = modelViewProjectionMatrix * vertex;
+
+    Texcoord = uvChar;
+    CharData = charData;
+    f_showBg = v_showBg;
+    f_pixResX = v_pixResX;
+    f_pixResY = v_pixResY;
+    if (x == cursorx && y == cursory && cursorvis!=0)
+    {
+        CharColor = bgcol;
+        bgColor = charColor;
+    } else {
+        CharColor = charColor;
+        bgColor = bgcol;
+    }
+
+    v_uv = vec2( 0.5*dx*(x_float+vertexOffs.x),0.5*dy*((y_float+1.0)-vertexOffs.y));
+}
+
+
+
+

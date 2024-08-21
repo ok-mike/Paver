@@ -1,0 +1,7 @@
+﻿  stdafx.cpp
+  glad.c
+glad.c(9425): fatal error C1010: unexpected end of file while looking for precompiled header. Did you forget to add '#include "stdafx.h"' to your source?
+  Phos.c
+Phos.c(11): fatal error C1853: 'x64\Release\Phos.pch' precompiled header file is from a previous version of the compiler, or the precompiled header is C++ and you are using it from C (or vice versa)
+  sonne16.c
+sonne16.c(1005): fatal error C1010: unexpected end of file while looking for precompiled header. Did you forget to add '#include "stdafx.h"' to your source?

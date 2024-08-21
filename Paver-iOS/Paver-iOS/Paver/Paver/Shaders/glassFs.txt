@@ -1,0 +1,33 @@
+
+#version 300 es
+
+precision mediump float;
+
+uniform samplerCube cubemapSampler;
+uniform sampler2D diffuse_map;
+
+in mat4 skyboxRotMatrix;
+in vec3 bgColor;
+in vec2 v_uv;
+in vec4 v_eyedir;
+in float f_diffuseAlpha;
+
+out vec4 fsFragColor;
+
+void main()
+{
+    vec4 diffuse_color = texture(diffuse_map, v_uv);
+    vec3 R0 = (skyboxRotMatrix * v_eyedir).xyz;
+    vec4 refraction = vec4( texture(cubemapSampler, R0).rgb, 1.0);
+
+    // fsFragColor = diffuse_color;
+    fsFragColor = (1.0 - f_diffuseAlpha) * refraction + f_diffuseAlpha * diffuse_color;
+    fsFragColor.a = 1.0;
+}
+
+
+
+
+
+
+

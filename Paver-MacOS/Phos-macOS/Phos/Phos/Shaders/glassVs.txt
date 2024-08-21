@@ -1,0 +1,95 @@
+// Vertex shader
+
+#version 330
+
+in vec2 vertexOffs;
+in vec2 uvChar;
+in vec3 charColor;
+in uint charData;
+
+
+uniform mat4 viewMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 modelViewProjectionMatrix;
+uniform vec4 light_position;
+
+uniform float skyboxYRot;
+
+uniform vec3 bgcol;
+uniform int cursorx;
+uniform int cursory;
+uniform int cursorvis;
+
+out vec2 v_uv;
+out vec4 v_normal;
+out vec4 v_lightdir;
+out vec4 v_eyedir;
+
+out mat4 skyboxRotMatrix;
+
+out vec2 Texcoord;
+out vec3 CharColor;
+out vec3 bgColor;
+flat out uint CharData;
+
+
+
+const float dx = (2.0 / 128.0);
+const float dy = 2.0 / 32.0;
+float z;
+
+
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+axis = normalize(axis);
+float s = sin(angle);
+float c = cos(angle);
+float oc = 1.0 - c;
+
+return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+0.0,                                0.0,                                0.0,                                1.0);
+}
+
+
+float rdist(float x, float y) {
+return sqrt( (64.0 - x) * ( 64.0 - x ) +  (16.0 - y) * (16.0 - y) );
+// range 0 - 65.96
+}
+
+
+void main()
+{
+    int y = gl_InstanceID / 128;
+    int x = gl_InstanceID % 128;
+
+    z = 0.2 - (rdist(x,y)/66) * (rdist(x,y)/66) / 48;
+    vec4 vertex = vec4(   -1 + x*dx,  1 - (y+1)*dy, z, 1.0 ) + vec4( vertexOffs.x * dx, vertexOffs.y * dy, 0, 0);
+    vec4 vsNormal = vec4(0.0, 0.0, 1.0, 0.0);
+    gl_Position = modelViewProjectionMatrix * vertex;
+
+    skyboxRotMatrix = rotationMatrix(vec3(0.0, 1.0, 0.0),skyboxYRot);
+
+    Texcoord = uvChar;
+    CharData = charData;
+    if (x == cursorx && y == cursory && cursorvis!=0)
+    {
+        CharColor = bgcol;
+        bgColor = charColor;
+    } else {
+        CharColor = charColor;
+        bgColor = bgcol;
+    }
+
+    v_uv = vec2( 0.5*(x*dx+vertexOffs.x*dx),0.38*(y*dy-vertexOffs.y*dy+dy));
+    v_normal = modelViewMatrix * vsNormal;
+    vec4 view_vertex = modelViewMatrix * vertex;
+    vec4 lp = viewMatrix * light_position;
+    v_lightdir = lp - view_vertex;
+    v_eyedir = -view_vertex;
+}
+
+
+
+

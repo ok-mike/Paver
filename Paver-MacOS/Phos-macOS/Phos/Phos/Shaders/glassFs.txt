@@ -1,0 +1,117 @@
+
+#version 330
+
+uniform sampler2DArray arrayTextureSampler;
+uniform samplerCube cubemapSampler;
+uniform sampler2D diffuse_map;
+uniform sampler2D normal_map;
+
+uniform vec4 light_diffuse;
+uniform vec4 material_diffuse;
+uniform vec4 light_specular;
+uniform vec4 material_specular;
+
+uniform float material_gloss;
+
+in mat4 skyboxRotMatrix;
+
+in vec2 Texcoord;
+in vec3 CharColor;
+in vec3 bgColor;
+flat in uint CharData;
+
+in vec2 v_uv;  // Todo: Use varying + same name in both shaders
+in vec4 v_normal;
+in vec4 v_lightdir;
+in vec4 v_eyedir;
+
+out vec4 fsFragColor;
+
+///////////////////////////////////////////////////////////////////////////////
+
+// http://www.thetenthplanet.de/archives/1180
+
+mat3 cotangent_frame(vec3 N, vec3 p, vec2 uv)
+{
+    // get edge vectors of the pixel triangle
+    vec3 dp1 = dFdx( p );
+    vec3 dp2 = dFdy( p );
+    vec2 duv1 = dFdx( uv );
+    vec2 duv2 = dFdy( uv );
+
+    // solve the linear system
+    vec3 dp2perp = cross( dp2, N );
+    vec3 dp1perp = cross( N, dp1 );
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+    // construct a scale-invariant frame
+    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+    return mat3( T * invmax, B * invmax, N );
+}
+
+vec3 perturb_normal( vec3 N, vec3 V, vec2 texcoord )
+{
+    // assume N, the interpolated vertex normal and
+    // V, the view vector (vertex to eye)
+    vec3 map = texture(normal_map, texcoord).xyz;
+    map = map * 255./127. - 128./127.;
+    mat3 TBN = cotangent_frame(N, -V, texcoord);
+    return normalize(TBN * map);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void main()
+{
+    // Compute diffuse color
+    vec4 diffuse_color = texture(diffuse_map, v_uv) * vec4(0.4, 0.4, 0.38, 1.0);
+
+    // Compute perturbed normal vector for normal mapping
+    vec3 N = normalize(v_normal.xyz);
+    vec3 L = normalize(v_lightdir.xyz);
+    vec3 V = normalize(v_eyedir.xyz);
+    vec3 PN = perturb_normal(N, V, v_uv);
+
+    // Compute refraction and reflection
+    float ratio = 1.00 / 1.52;
+    vec3 I = normalize(vec3(-v_eyedir)); // normalize(Position - cameraPos);
+    vec3 R0 = refract(I, normalize(N), ratio);
+    vec3 R1 = reflect(I, normalize(PN));
+
+    // Adjust for rotating skybox
+    R0 = (skyboxRotMatrix * vec4(R0,1.0)).xyz;
+    R1 = (skyboxRotMatrix * vec4(R1,1.0)).xyz;
+    vec4 refraction = vec4( texture(cubemapSampler, R0).rgb, 1.0);
+    vec4 reflection = vec4( texture(cubemapSampler, R1).rgb, 1.0);
+
+    float lambertTerm = dot(PN,L);
+    if (lambertTerm > 0.0)
+    {
+         // Brightness related to viewing angle
+        fsFragColor = light_diffuse * material_diffuse * lambertTerm * diffuse_color;
+        vec3 R = reflect(-L, PN);
+
+        // Compute specular color
+        float specular = pow( max(dot(R, V), 0.0), material_gloss);
+        fsFragColor += vec4(light_specular.rgb * material_specular.rgb * specular, 0);
+    }
+
+    vec4 charPixelColor = texture( arrayTextureSampler, vec3(Texcoord, CharData));
+
+    if (charPixelColor.x < 0.1 && charPixelColor.y < 0.1 && charPixelColor.z < 0.1)
+        fsFragColor =  vec4(bgColor,1.0) *  gl_FragCoord * fsFragColor + 0.5 * refraction;
+    else fsFragColor = charPixelColor * vec4(CharColor,1.0);
+
+    if ( diffuse_color.r > 0.1 && diffuse_color.g > 0.1 && diffuse_color.b > 0.1)
+        fsFragColor += 0.2 * diffuse_color;
+    // fsFragColor = 0.8 * fsFragColor + 0.2 * reflection;
+    fsFragColor.a = 1.0;
+}
+
+
+
+
+
+
+

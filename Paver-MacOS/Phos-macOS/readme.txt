@@ -1,0 +1,1 @@
+The card.8T3 image is stored in the user’s Downloads folder. If the file is not present when the application starts, an archived copy of it is copied from the application folder into the Downloads folder automatically.

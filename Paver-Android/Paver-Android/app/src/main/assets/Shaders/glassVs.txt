@@ -1,0 +1,47 @@
+// Vertex shader
+
+#version 300 es
+
+precision mediump float;
+
+in vec2 vertexOffs;
+in vec2 uvChar;
+
+uniform mat4 modelViewProjectionMatrix;
+uniform float skyboxYRot;
+uniform float v_diffuseAlpha;
+
+uniform vec3 bgcol;
+
+out vec2 v_uv;
+out mat4 skyboxRotMatrix;
+out vec3 bgColor;
+out vec4 v_eyedir;
+out float f_diffuseAlpha;
+
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+axis = normalize(axis);
+float s = sin(angle);
+float c = cos(angle);
+float oc = 1.0 - c;
+
+return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+0.0,                                0.0,                                0.0,                                1.0);
+}
+
+void main()
+{
+    float z = 0.8;
+    f_diffuseAlpha = v_diffuseAlpha;
+    gl_Position = vec4(vertexOffs, z, 1.0);
+    v_uv = vec2( uvChar.x, 1.0 - uvChar.y );
+    skyboxRotMatrix = rotationMatrix(vec3(0.0, 1.0, 0.0),skyboxYRot);
+    v_eyedir = vec4(vertexOffs, z, 0.0);
+}
+
+
+
+

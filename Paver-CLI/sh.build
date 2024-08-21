@@ -1,0 +1,27 @@
+echo
+echo Build script
+echo
+echo Importing source files
+echo
+
+./hen -import Colonel/src/8T3.asm /sys/src/batch/8T3.asm
+./hen -import Colonel/src/PFS.asm /sys/src/batch/PFS.asm
+./hen -import Colonel/src/CYF.asm /sys/src/batch/CYF.asm
+#./hen -import Colonel/src/AGE.asm /sys/src/batch/AGE.asm
+./hen -import Colonel/src/ECO.asm /sys/src/batch/ECO.asm
+./hen -import Colonel/src/TEA.asm /sys/src/batch/TEA.asm
+
+echo
+echo Running assembler
+echo
+
+./hen -f sasm
+#./hen -f spatter
+
+echo
+echo Resetting process image
+echo
+
+./hen -new
+
+
