@@ -5,7 +5,7 @@ These files are for an original 16-bit microcontroller developed from scratch. T
 
 In the subfolders, there are native implementions of Paver emulators with graphics consoles for iOS, Android, macOS, and Windows.
 
-Weirdly joyous, when the character generator in your VGA driver is still off, but you know you'll get there soon:
+When the character generator in your VGA driver is still off, but you know you'll get there soon:
 
 ![CPU board](https://github.com/Dosflange/Paver/blob/main/vga_driver_fail.jpg)
 
